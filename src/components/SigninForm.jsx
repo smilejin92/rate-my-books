@@ -1,6 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
+import axios from 'axios';
 import styled, { css } from 'styled-components';
+import { Alert } from 'antd';
 import posterImage from '../assets/posterImage.jpg';
+import { useHistory } from 'react-router-dom';
 
 const Form = styled.form`
   position: absolute;
@@ -30,6 +33,7 @@ const Poster = styled.div`
 `;
 
 const Fieldset = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 32rem;
@@ -80,11 +84,21 @@ const SigninBtn = styled.button`
   border-radius: 0.5rem;
   background: rgba(0, 149, 246, 0.3);
 
-  ${(props) =>
-    props.clickable &&
+  ${({ clickable }) =>
+    clickable &&
     css`
       background: rgb(0, 149, 246);
     `}
+`;
+
+const Error = styled(Alert).attrs(() => ({
+  type: 'error',
+}))`
+  position: absolute;
+  bottom: -7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
 `;
 
 export default function SigninForm() {
@@ -92,6 +106,22 @@ export default function SigninForm() {
     email: '',
     password: '',
   });
+
+  const [invalidated, setInvalidated] = useState({
+    value: false,
+    message: '',
+  });
+
+  const errorMessage = useMemo(
+    () => ({
+      PASSWORD_NOT_MATCH: '비밀번호가 일치하지 않습니다.',
+      USER_NOT_EXIST: '존재하지 않는 사용자입니다.',
+      UNKNOWN: '다음에 다시 시도해주세요.',
+    }),
+    [],
+  );
+
+  const history = useHistory();
 
   const handleChange = useCallback(({ target }) => {
     setInput((prevInput) => ({
@@ -101,11 +131,38 @@ export default function SigninForm() {
   }, []);
 
   const handleClick = useCallback(
-    (e) => {
+    async (e) => {
       e.preventDefault();
       console.log(input);
+
+      try {
+        const { email, password } = input;
+        const { data } = await axios.post('https://api.marktube.tv/v1/me', {
+          email,
+          password,
+        });
+
+        setInvalidated({
+          value: false,
+          message: '',
+        });
+
+        console.log(data.token);
+        localStorage.setItem('token', data.token);
+        history.push('/');
+      } catch (error) {
+        const type = error?.response?.data?.error || 'UNKNOWN';
+        const message = errorMessage[type];
+
+        setInvalidated({
+          value: true,
+          message,
+        });
+
+        console.error(error);
+      }
     },
-    [input],
+    [input, errorMessage, history],
   );
 
   return (
@@ -142,6 +199,7 @@ export default function SigninForm() {
             Sign in
           </SigninBtn>
         </FlexBox>
+        {invalidated.value && <Error message={invalidated.message} showIcon />}
       </Fieldset>
     </Form>
   );

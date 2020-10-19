@@ -1,5 +1,6 @@
 import React from 'react';
+import withAuth from '../hocs/withAuth';
 
-export default function Home() {
-  return <div>홈</div>;
-}
+const Home = () => <div>홈</div>;
+
+export default withAuth(Home, true);

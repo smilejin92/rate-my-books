@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import SigninForm from '../components/SigninForm';
+import withAuth from '../hocs/withAuth';
 
 const FlexMain = styled.main`
   display: flex;
@@ -45,4 +46,4 @@ const Signin = () => (
   </FlexMain>
 );
 
-export default Signin;
+export default withAuth(Signin, false);
